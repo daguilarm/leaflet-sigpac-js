@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Specific styles for the SIGPAC popup */
+.sigpac-popup {
+  @apply bg-white p-4 rounded-lg shadow-lg min-w-[250px] max-w-[350px];
+}
+
+.sigpac-popup-title {
+  @apply text-xl font-bold mb-3 text-gray-800 border-b pb-2;
+}
+
+.sigpac-popup-content {
+  @apply overflow-y-auto max-h-[300px];
+}
+
+.sigpac-popup-row {
+  @apply flex justify-between py-1 border-b border-gray-100;
+}
+
+.sigpac-popup-label {
+  @apply font-medium text-gray-600;
+}
+
+.sigpac-popup-value {
+  @apply text-gray-800;
+}
+
+.sigpac-loading {
+  @apply py-4 px-6 text-center;
+}
+
+.sigpac-error {
+  @apply text-red-600 font-medium py-4 px-6;
+}
+
+/* Styles to override the default Leaflet popup container */
+.leaflet-popup-content {
+  /* Using ! to override Leaflet's default inline styles. */
+  @apply !my-3 !mx-[14px] !w-auto;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply rounded-lg p-px;
+}

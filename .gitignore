@@ -1,0 +1,38 @@
+################
+### Node.js
+################
+
+# Dependencies
+/node_modules
+
+# Logs
+npm-debug.log*
+yarn-error.log
+yarn-debug.log
+
+# Build artifacts
+/dist
+/build
+
+# Vite
+.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test reports
+/coverage
+
+################
+### Editors & OS
+################
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# Operating System files
+.DS_Store
+Thumbs.db
