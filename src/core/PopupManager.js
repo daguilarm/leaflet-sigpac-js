@@ -1,13 +1,11 @@
-import MarkerManager from './MarkerManager.js';
-
 /**
  * Handles creation and display of popups
  */
 export default class PopupManager {
-  constructor(map, config) {
+  constructor(map, config, geometryManager) { // geometryManager added here
     this.map = map;
     this.config = config;
-    this.markerManager = new MarkerManager(map);
+    this.geometryManager = geometryManager;
   }
   
   /**
@@ -39,28 +37,22 @@ export default class PopupManager {
   showParcelaInfo(parcelaData, latlng) {
     // The MapManager is responsible for closing previous popups.
     // This method just displays the final result.
-    this.clearMarkers(); // Also clear previous markers.
+    this.geometryManager.clearLayers(); // Clear previous geometries (markers, polygons, etc.)
 
     const content = this.buildPopupContent(parcelaData);
 
-    if (this.config.showAs === 'marker') {
-      const marker = this.markerManager.createMarker(parcelaData, latlng);
-      this.markerManager.bindPopupToMarker(marker, content);
+    if (this.config.interactionMode === 'marker') {
+      const marker = this.geometryManager.addMarker(latlng, { // Use geometryManager
+        title: `Parcela SIGPAC: ${parcelaData.poligono}-${parcelaData.parcela}`
+      });
+      // Attach data for events
+      marker.parcelaData = parcelaData;
+      this.geometryManager.bindPopup(marker, content);
       // Do not open the popup automatically.
       // The user can click the marker to see the popup.
-    } else {
-      L.popup()
-        .setLatLng(latlng)
-        .setContent(content)
-        .openOn(this.map);
+    } else if (this.config.interactionMode === 'popup') {
+      L.popup().setLatLng(latlng).setContent(content).openOn(this.map);
     }
-  }
-
-  /**
-   * Clears all markers (for marker mode)
-   */
-  clearMarkers() {
-    this.markerManager.clearMarkers();
   }
   
   /**

@@ -36,7 +36,7 @@ export default class LayerManager {
       minZoom: this.config.minZoomFeature,
       tileSize: 512,
       opacity: 0.7
-    }).addTo(this.map);
+    });
   }
   
   /**

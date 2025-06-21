@@ -58,7 +58,7 @@ export default class SigpacService {
         regadio: parcela.coef_regadio || 'N/A',
         incidencias: parcela.incidencias || 'N/A', // Coeficiente de regadío del recinto.
         admisibilidad: parcela.admisibilidad || 'N/A', //  Porcentaje de admisibilidad de aplicación en los recintos de pastos.
-        coords: parcela.wkt,
+        wkt: parcela.wkt,
         srid: parcela.srid,
       };
     } catch (error) {

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SIGPAC Map with Initial Features</title>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- WKT Parser for Leaflet (required for 'wkt' type) -->
+  <script src="https://unpkg.com/terraformer@1.0.9/terraformer.js"></script>
+  <script src="https://unpkg.com/terraformer-wkt-parser@1.2.1/terraformer-wkt-parser.min.js"></script>
+
+  <!-- Library files -->
+  <link rel="stylesheet" href="../dist/assets/css/leaflet-sigpac.min.css" />
+  <script type="module" src="../dist/assets/js/leaflet-sigpac.es.min.js"></script>
+</head>
+<body>
+  <div id="map" style="height: 500px;"></div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const manager = new window.LeafletSigpac.MapManager({
+        debug: true,
+        interactionMode: 'popup', // Interaction on click is independent of initial features
+        clickEnabled: false,
+        initialFeatures: [
+          { 
+            type: 'marker',
+            coordinates: [37.720, -0.875], // Slightly offset to not overlap with polygon
+            popupContent: '<strong>Initial Marker</strong><br>This marker was loaded from config.' 
+          },
+          { 
+            type: 'wkt', 
+            data: 'POLYGON((-0.869815184053194 37.71707245837211,-0.870307901687646 37.71709064794127,-0.871197864559166 37.71712350081271,-0.871275132299968 37.71712635317453,-0.871317617655106 37.717127921428705,-0.871331941490289 37.71712845032683,-0.87135116790093 37.71712915943588,-0.87137514098362 37.717130044564904,-0.871713323136468 37.71714252857223,-0.872148540911736 37.71715859500519,-0.872366852621994 37.71716665420557,-0.872384628963299 37.71716731050863,-0.872449920640136 37.719049801415935,-0.872451776393609 37.719103308974404,-0.872452133462705 37.719113607819445,-0.872208618206299 37.71904423667009,-0.872141556271407 37.71903284231024,-0.870153434937652 37.7186964429883,-0.870134537935825 37.71861561964396,-0.870116096071368 37.71854772454785,-0.870061022773297 37.71833373119436,-0.869896553059462 37.71747758762777,-0.869837621571131 37.7171158179598,-0.869815184053194 37.71707245837211))',
+            popupContent: '<strong>Initial Polygon</strong><br>This WKT was loaded from config.' 
+          }
+        ],
+        
+        defaultMapOptions: {
+          center: [37.718387, -0.874100],
+          zoom: 15
+        }
+      });
+      
+      manager.init(document.getElementById('map'));
+    });
+  </script>
+</body>
+</html>
