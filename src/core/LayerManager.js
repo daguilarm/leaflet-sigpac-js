@@ -7,6 +7,7 @@ export default class LayerManager {
     this.map = map;
     this.baseLayer = null;
     this.sigpacLayer = null;
+    this.setupAttribution(config.defaultMapOptions);
   }
   
   /**
@@ -15,9 +16,11 @@ export default class LayerManager {
   initBaseLayer(options) {
     this.baseLayer = L.tileLayer(options.tileUrl, {
       maxZoom: options.maxZoom,
-      minZoom: options.minZoom,
-      attribution: options.attribution
+      minZoom: options.minZoom
     }).addTo(this.map);
+
+    // Configure attribution
+    this.setupAttribution(options);
   }
   
   /**
@@ -37,7 +40,7 @@ export default class LayerManager {
   }
   
   /**
-   * Sets up layer control
+   * Configure layer control
    */
   setupLayerControl() {
     if (!this.baseLayer) return;
@@ -46,5 +49,22 @@ export default class LayerManager {
     const overlays = { 'SIGPAC': this.sigpacLayer };
     
     L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(this.map);
+  }
+
+  /**
+   * Configure attribution
+   */
+  setupAttribution(options) {
+    const attributionControl = this.map.attributionControl;
+    
+    if (!attributionControl) return;
+    
+    if (options.hideLeafletAttribution === true) {
+      attributionControl.setPrefix('');
+    }
+    
+    if (options.attribution) {
+      attributionControl.addAttribution(options.attribution);
+    }
   }
 }

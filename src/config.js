@@ -21,7 +21,8 @@ export const defaultConfig = {
     zoom: 13,
     maxZoom: 19,
     minZoom: 5,
-    tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    tileUrl: 'https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/{z}/{x}/{-y}.jpeg',
+    attribution: '<a href="https://www.scne.es/">CC BY 4.0 scne.es</a>',
+    hideLeafletAttribution: false
   }
 };

@@ -1,31 +1,32 @@
-import { defaultConfig } from '../../config/defaultConfig.js';
+import { defaultConfig } from '../config.js';
 
-/**
- * Handles configuration management including merging defaults with user-provided config
- */
 export default class ConfigManager {
   constructor(userConfig = {}) {
-    this.config = this.mergeConfigs(userConfig);
+    this.userConfig = userConfig;
   }
-  
-  /**
-   * Merges user configuration with defaults
-   */
-  mergeConfigs(userConfig) {
-    return {
-      ...defaultConfig,
-      ...userConfig,
-      defaultMapOptions: {
-        ...defaultConfig.defaultMapOptions,
-        ...(userConfig.defaultMapOptions || {})
-      }
-    };
-  }
-  
-  /**
-   * Gets the current configuration
-   */
+
   getConfig() {
-    return this.config;
+    // Fusionar primer nivel
+    const mergedConfig = { ...defaultConfig, ...this.userConfig };
+    
+    // Fusionar defaultMapOptions específicamente
+    mergedConfig.defaultMapOptions = {
+      ...defaultConfig.defaultMapOptions,
+      ...(this.userConfig.defaultMapOptions || {}),
+    };
+
+    // Fusionar propiedades de nivel superior con defaultMapOptions
+    const mapOptionKeys = [
+      'minZoom', 'maxZoom', 'center', 'zoom', 
+      'tileUrl', 'attribution', 'hideLeafletAttribution'
+    ];
+    
+    mapOptionKeys.forEach(key => {
+      if (this.userConfig[key] !== undefined) {
+        mergedConfig.defaultMapOptions[key] = this.userConfig[key];
+      }
+    });
+      
+    return mergedConfig;
   }
 }

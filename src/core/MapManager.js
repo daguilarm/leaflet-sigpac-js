@@ -35,7 +35,8 @@ export default class MapManager {
     };
     
     // Initialize map
-    this.map = L.map(mapElement);
+    this.map = L.map(mapElement, { attributionControl: false });
+    L.control.attribution({ position: 'bottomright' }).addTo(this.map);
     this.map.setView(options.center, options.zoom);
     
     // Initialize managers
