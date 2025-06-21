@@ -52,9 +52,14 @@ export default class SigpacService {
         parcela: parcela.parcela,
         recinto: parcela.recinto,
         uso: parcela.uso_sigpac || 'N/A',
-        superficie: this.calculateSurface(parcela.dn_surface),
+        superficie: this.calculateSurface(parcela.dn_surface), // En Ha
         cultivo: 'N/A',
-        coords: parcela.wkt
+        pendiente: parcela.pendiente_media || 'N/A',
+        regadio: parcela.coef_regadio || 'N/A',
+        incidencias: parcela.incidencias || 'N/A', // Coeficiente de regadío del recinto.
+        admisibilidad: parcela.admisibilidad || 'N/A', //  Porcentaje de admisibilidad de aplicación en los recintos de pastos.
+        coords: parcela.wkt,
+        srid: parcela.srid,
       };
     } catch (error) {
       this.logger.error("SIGPAC parse error", error);

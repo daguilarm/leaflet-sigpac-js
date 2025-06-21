@@ -6,27 +6,33 @@ export default class ConfigManager {
   }
 
   getConfig() {
-    // Fusionar primer nivel
-    const mergedConfig = { ...defaultConfig, ...this.userConfig };
-    
-    // Fusionar defaultMapOptions específicamente
-    mergedConfig.defaultMapOptions = {
-      ...defaultConfig.defaultMapOptions,
-      ...(this.userConfig.defaultMapOptions || {}),
-    };
-
-    // Fusionar propiedades de nivel superior con defaultMapOptions
-    const mapOptionKeys = [
-      'minZoom', 'maxZoom', 'center', 'zoom', 
-      'tileUrl', 'attribution', 'hideLeafletAttribution'
-    ];
-    
-    mapOptionKeys.forEach(key => {
-      if (this.userConfig[key] !== undefined) {
-        mergedConfig.defaultMapOptions[key] = this.userConfig[key];
-      }
-    });
-      
-    return mergedConfig;
-  }
+  // Fusionar primer nivel
+  const mergedConfig = { ...defaultConfig, ...this.userConfig };
+  
+  // Preparar opciones de mapa de nivel superior
+  const topLevelMapOptions = {};
+  const mapOptionKeys = [
+    'minZoom', 'maxZoom', 'center', 'zoom', 'tileUrl', 'attribution', 'hideLeafletAttribution'
+  ];
+  
+  mapOptionKeys.forEach(key => {
+    if (this.userConfig[key] !== undefined) {
+      topLevelMapOptions[key] = this.userConfig[key];
+    }
+  });
+  
+  // Fusionar defaultMapOptions con prioridad
+  mergedConfig.defaultMapOptions = {
+    ...defaultConfig.defaultMapOptions,
+    ...topLevelMapOptions,
+    ...(this.userConfig.defaultMapOptions || {}),
+  };
+  
+  // Eliminar propiedades movidas del nivel superior
+  mapOptionKeys.forEach(key => {
+    if (key in mergedConfig) {
+      delete mergedConfig[key];    }  });
+  
+  return mergedConfig;
+}
 }

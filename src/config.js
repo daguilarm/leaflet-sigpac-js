@@ -23,6 +23,9 @@ export const defaultConfig = {
     minZoom: 5,
     tileUrl: 'https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/{z}/{x}/{-y}.jpeg',
     attribution: '<a href="https://www.scne.es/">CC BY 4.0 scne.es</a>',
-    hideLeafletAttribution: false
+    hideLeafletAttribution: false,
+    debug: false,
+    showAs: 'popup', // 'popup' or 'marker'
+    popupFields: null, // Custom fields by the user
   }
 };

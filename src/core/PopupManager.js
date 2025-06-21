@@ -1,15 +1,20 @@
+import MarkerManager from './MarkerManager.js';
+
 /**
  * Handles creation and display of popups
  */
 export default class PopupManager {
-  constructor(map) {
+  constructor(map, config) {
     this.map = map;
+    this.config = config;
+    this.markerManager = new MarkerManager(map);
   }
   
   /**
    * Shows loading popup
    */
   showLoadingPopup(latlng) {
+    // This method should only create the popup. MapManager controls the flow.
     return L.popup()
       .setLatLng(latlng)
       .setContent('<div class="sigpac-loading">Loading SIGPAC data...</div>')
@@ -20,22 +25,42 @@ export default class PopupManager {
    * Shows error popup
    */
   showErrorPopup(latlng, message) {
-    L.popup()
+    // Close any other popups before showing an error, as this is a terminal state.
+    this.map.closePopup();
+    return L.popup()
       .setLatLng(latlng)
       .setContent(`<div class="sigpac-error">${message}</div>`)
       .openOn(this.map);
   }
   
   /**
-   * Shows parcel information popup
+   * Shows parcel information based on configuration
    */
   showParcelaInfo(parcelaData, latlng) {
-    const popupContent = this.buildPopupContent(parcelaData);
-    
-    L.popup()
-      .setLatLng(latlng)
-      .setContent(popupContent)
-      .openOn(this.map);
+    // The MapManager is responsible for closing previous popups.
+    // This method just displays the final result.
+    this.clearMarkers(); // Also clear previous markers.
+
+    const content = this.buildPopupContent(parcelaData);
+
+    if (this.config.showAs === 'marker') {
+      const marker = this.markerManager.createMarker(parcelaData, latlng);
+      this.markerManager.bindPopupToMarker(marker, content);
+      // Do not open the popup automatically.
+      // The user can click the marker to see the popup.
+    } else {
+      L.popup()
+        .setLatLng(latlng)
+        .setContent(content)
+        .openOn(this.map);
+    }
+  }
+
+  /**
+   * Clears all markers (for marker mode)
+   */
+  clearMarkers() {
+    this.markerManager.clearMarkers();
   }
   
   /**
@@ -57,16 +82,9 @@ export default class PopupManager {
   /**
    * Builds individual rows for popup content
    */
-  buildPopupRows(parcelaData, safeGet) {
-    const fields = [
-      { label: 'Province:', value: parcelaData.provincia },
-      { label: 'Municipality:', value: parcelaData.municipio },
-      { label: 'Polygon:', value: parcelaData.poligono },
-      { label: 'Parcel:', value: parcelaData.parcela },
-      { label: 'Enclosure:', value: parcelaData.recinto },
-      { label: 'Use:', value: parcelaData.uso },
-      { label: 'Surface:', value: parcelaData.superficie, suffix: 'ha' }
-    ];
+  buildPopupRows(parcelaData) {
+    const safeGet = (value) => value !== undefined && value !== null ? value : 'N/A';
+    const fields = this.getFieldsConfig(parcelaData);
     
     return fields.map(field => `
       <div class="sigpac-popup-row">
@@ -76,5 +94,30 @@ export default class PopupManager {
         </span>
       </div>
     `).join('');
+  }
+
+  /**
+   * Gets field configuration from settings or uses default
+   */
+  getFieldsConfig(parcelaData) {
+    if (this.config.popupFields) {
+      const fields = typeof this.config.popupFields === 'function' 
+        ? this.config.popupFields(parcelaData)
+        : this.config.popupFields;
+      
+      // Asegurar que siempre sea un array
+      return Array.isArray(fields) ? fields : [];
+    }
+    
+    // Default fields
+    return [
+      { label: 'Province:', value: parcelaData.provincia },
+      { label: 'Municipality:', value: parcelaData.municipio },
+      { label: 'Polygon:', value: parcelaData.poligono },
+      { label: 'Parcel:', value: parcelaData.parcela },
+      { label: 'Enclosure:', value: parcelaData.recinto },
+      { label: 'Use:', value: parcelaData.uso },
+      { label: 'Surface:', value: parcelaData.superficie, suffix: 'ha' }
+    ];
   }
 }

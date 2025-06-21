@@ -2,7 +2,9 @@
 <html>
 <head>
   <title>SIGPAC Map</title>
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Rutas para probar en desarrollo, usando "npm run dev" -->
   <link rel="stylesheet" href="../dist/assets/css/leaflet-sigpac.min.css" />
@@ -15,11 +17,24 @@
     document.addEventListener('DOMContentLoaded', () => {
       const manager = new window.LeafletSigpac.MapManager({
         debug: true,
-        minZoomFeature: 12,
         hideLeafletAttribution: false,
+        minZoomFeature: 12,
+        
+        showAs: 'marker', // 'popup' or 'marker'
+        
+        popupFields: (parcelaData) => [
+          { label: 'Provincia:', value: parcelaData.provincia },
+          { label: 'Municipio:', value: parcelaData.municipio },
+          { label: 'Polígono:', value: parcelaData.poligono },
+          { label: 'Parcela:', value: parcelaData.parcela },
+          { label: 'Superficie:', value: parcelaData.superficie, suffix: 'ha' }
+        ],
+        
         defaultMapOptions: {
           center: [37.718387, -0.874100],
-          zoom: 15
+          zoom: 15,
+          tileUrl: 'https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/{z}/{x}/{-y}.jpeg',
+          attribution: '<a href="https://www.scne.es/">CC BY 4.0 scne.es</a>'
         }
       });
       
