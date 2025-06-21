@@ -18,6 +18,7 @@ export default class ConfigManager {
     mapOptionKeys.forEach(key => {
       if (this.userConfig[key] !== undefined) {
         topLevelMapOptions[key] = this.userConfig[key];
+        delete mergedConfig[key];
       }
     });
     

@@ -27,33 +27,38 @@ describe('ConfigManager', () => {
   });
 
   test('should move top-level map options to defaultMapOptions', () => {
+    // Nota: 'interactionMode' y 'popupFields' son ahora opciones de nivel superior,
+    // no parte de defaultMapOptions. El test se actualiza para reflejar esto.
     const userConfig = {
       minZoom: 6,
       maxZoom: 20,
       tileUrl: 'https://custom-tiles/{z}/{x}/{y}.png',
       attribution: 'Custom attribution',
-      showAs: 'marker',
-      popupFields: [],
+      interactionMode: 'marker', // Esta es una opción de nivel superior
+      popupFields: [], // Esta es una opción de nivel superior
     };
 
     const manager = new ConfigManager(userConfig);
     const mergedConfig = manager.getConfig();
 
-    // Verificar que las opciones de primer nivel se movieron a defaultMapOptions
+    // Aserciones para opciones que *deberían* moverse a defaultMapOptions
     expect(mergedConfig.defaultMapOptions.minZoom).toBe(6);
     expect(mergedConfig.defaultMapOptions.maxZoom).toBe(20);
     expect(mergedConfig.defaultMapOptions.tileUrl).toBe('https://custom-tiles/{z}/{x}/{y}.png');
     expect(mergedConfig.defaultMapOptions.attribution).toBe('Custom attribution');
-    expect(mergedConfig.defaultMapOptions.showAs).toBe('marker');
-    expect(mergedConfig.defaultMapOptions.popupFields).toEqual([]);
 
-    // Verificar que no quedaron en el nivel superior
+    // Aserciones para opciones que *deberían permanecer* en el nivel superior
+    expect(mergedConfig.interactionMode).toBe('marker');
+    expect(mergedConfig.popupFields).toEqual([]);
+
+    // Verificar que las opciones de mapa movidas ya no están en el nivel superior
     expect(mergedConfig.minZoom).toBeUndefined();
     expect(mergedConfig.maxZoom).toBeUndefined();
     expect(mergedConfig.tileUrl).toBeUndefined();
     expect(mergedConfig.attribution).toBeUndefined();
-    expect(mergedConfig.showAs).toBeUndefined();
-    expect(mergedConfig.popupFields).toBeUndefined();
+    // interactionMode y popupFields NO deben ser undefined en el nivel superior
+    expect(mergedConfig.interactionMode).toBeDefined();
+    expect(mergedConfig.popupFields).toBeDefined();
   });
 
   test('should prioritize userConfig.defaultMapOptions over top-level options', () => {
@@ -61,7 +66,10 @@ describe('ConfigManager', () => {
       zoom: 12, // Top-level
       defaultMapOptions: {
         zoom: 15, // Dentro de defaultMapOptions
+        center: [1, 2],
       },
+      // Asegurarse de que interactionMode de nivel superior no se vea afectado por defaultMapOptions
+      interactionMode: 'marker',
     };
 
     const manager = new ConfigManager(userConfig);
@@ -69,19 +77,22 @@ describe('ConfigManager', () => {
 
     // defaultMapOptions debería tener prioridad
     expect(mergedConfig.defaultMapOptions.zoom).toBe(15);
+    expect(mergedConfig.defaultMapOptions.center).toEqual([1, 2]);
+    expect(mergedConfig.interactionMode).toBe('marker'); // Debería permanecer en el nivel superior
   });
 
   test('should handle userConfig without defaultMapOptions', () => {
     const userConfig = {
       debug: true,
-      showAs: 'popup',
+      // 'showAs' es ahora 'interactionMode' y es una opción de configuración de nivel superior.
+      interactionMode: 'popup',
     };
 
     const manager = new ConfigManager(userConfig);
     const mergedConfig = manager.getConfig();
 
     expect(mergedConfig.debug).toBe(true);
-    expect(mergedConfig.defaultMapOptions.showAs).toBe('popup');
+    expect(mergedConfig.interactionMode).toBe('popup'); // Debería estar en el nivel superior
     expect(mergedConfig.defaultMapOptions.center).toEqual(defaultConfig.defaultMapOptions.center);
   });
 
