@@ -22,13 +22,14 @@
         // clickEnabled: false,
         interactionMode: 'marker', // 'popup' or 'marker'
         
-        popupFields: (parcelaData) => [
-          { label: 'Provincia:', value: parcelaData.provincia },
-          { label: 'Municipio:', value: parcelaData.municipio },
-          { label: 'Polígono:', value: parcelaData.poligono },
-          { label: 'Parcela:', value: parcelaData.parcela },
-          { label: 'Superficie:', value: parcelaData.superficie, suffix: 'ha' }
-        ],
+        // In case we use the popup value for interactionMode.
+        // popupFields: (parcelaData) => [
+        //   { label: 'Provincia:', value: parcelaData.provincia },
+        //   { label: 'Municipio:', value: parcelaData.municipio },
+        //   { label: 'Polígono:', value: parcelaData.poligono },
+        //   { label: 'Parcela:', value: parcelaData.parcela },
+        //   { label: 'Superficie:', value: parcelaData.superficie, suffix: 'ha' }
+        // ],
         
         defaultMapOptions: {
           center: [37.718387, -0.874100],
