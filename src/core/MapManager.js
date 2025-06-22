@@ -1,4 +1,5 @@
-import Logger from './Logger.js';
+import EventEmitter from './EventEmitter.js';
+import Logger from './LogManager.js';
 import SigpacService from './SigpacService.js';
 import ConfigManager from './ConfigManager.js';
 import LayerManager from './LayerManager.js';
@@ -6,81 +7,161 @@ import PopupManager from './PopupManager.js';
 import GeometryManager from './GeometryManager.js';
 import EventManager from './EventManager.js';
 
+/**
+ * Core map management and coordination class
+ */
 export default class MapManager {
+
   constructor(userConfig = {}) {
     this.userConfig = userConfig;
-    // Initialize configuration
-    this.configManager = new ConfigManager(userConfig);
-    this.config = this.configManager.getConfig();
-    
-    // Initialize services
-    this.logger = new Logger(this.config.debug);
-    this.sigpacService = new SigpacService(this.config, this.logger);
-    
-    // Core components
-    this.map = null;
-    this.layerManager = null;
-    this.popupManager = null;
-    this.geometryManager = null;
-    this.eventManager = null;
+    this.eventBus = new EventEmitter();
+    //To cancel current request
+    this.currentAbortController = null;
   }
-  
+
+  /**
+   * Initialize map on target element
+   */
   init(mapElement, customOptions = {}) {
     if (typeof L === 'undefined') {
-      this.logger.error('Leaflet not loaded');
-      return;
+      throw new Error('Leaflet not loaded');
     }
-   
-    // Merge options
+
+    // Initialize subsystems
+    this.#initConfig();
+    this.#initLogger();
+    this.#initMap(mapElement, customOptions);
+    this.#initSubsystems();
+    this.#setupEventHandlers();
+
+    this.logger.info('Leaflet map initialized');
+    return this.map;
+  }
+
+  /** 
+   * Cleanup resources to prevent memory leaks 
+   */
+  destroy() {
+    // Cancel any pending requests
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
+
+    // Clean event listeners
+    this.eventBus.offAll();
+    this.map.off();
+    this.map.remove();
+    
+    // Release references
+    this.subsystems = null;
+    this.logger.debug('MapManager destroyed');
+  }
+
+  /**
+   * Initialize configuration
+   * @private
+   */
+  #initConfig() {
+    this.configManager = new ConfigManager(this.userConfig);
+    this.config = this.configManager.getConfig();
+  }
+
+  /**
+   * Initialize logger
+   * @private
+   */
+  #initLogger() {
+    this.logger = new Logger(this.config.debug);
+  }
+
+  /**
+   * Initialize Leaflet map
+   * @private
+   */
+  #initMap(mapElement, customOptions) {
     const options = { 
       ...this.config.defaultMapOptions, 
       ...customOptions 
     };
     
-    // Initialize map
     this.map = L.map(mapElement, { attributionControl: false });
     L.control.attribution({ position: 'bottomright' }).addTo(this.map);
     this.map.setView(options.center, options.zoom);
+  }
+
+  /**
+   * Initialize subsystem managers
+   * @private
+   */
+  #initSubsystems() {
+    // Create GeometryManager first
+    this.geometryManager = new GeometryManager(this.map, this.config);
     
-    // Initialize managers
-    this.geometryManager = new GeometryManager(this.map, this.config); // Initialize geometryManager first
+    // Create the other managers
     this.layerManager = new LayerManager(this.config, this.map);
-    this.popupManager = new PopupManager(this.map, this.config, this.geometryManager); // Pass geometryManager
-    this.eventManager = new EventManager(this.config, this.map.getContainer());
+    this.popupManager = new PopupManager(
+      this.map, 
+      this.config, 
+      this.geometryManager
+    );
+    this.eventManager = new EventManager(
+      this.config, 
+      this.map.getContainer(),
+      this.eventBus
+    );
+    this.sigpacService = new SigpacService(this.config, this.logger);
     
-    // Setup layers and controls
-    this.layerManager.initBaseLayer(options);
+    // Group subsystems
+    this.subsystems = {
+      geometryManager: this.geometryManager,
+      layerManager: this.layerManager,
+      popupManager: this.popupManager,
+      eventManager: this.eventManager,
+      sigpacService: this.sigpacService
+    };
+    
+    // Configure layers
+    this.layerManager.initBaseLayer(this.config.defaultMapOptions);
     this.layerManager.initSigpacLayer();
-    // Add SIGPAC layer to map only if the user has NOT provided the initialFeatures option.
-    // If the user provides `initialFeatures` (even an empty array), we assume they want
-    // to control the layers, so we don't activate the SIGPAC layer by default.
+    
+    // Add SIGPAC layer only if the user did not provide initial features
     if (!this.userConfig.hasOwnProperty('initialFeatures')) {
       this.map.addLayer(this.layerManager.sigpacLayer);
     }
+    
     this.layerManager.setupLayerControl();
-    this._processInitialFeatures();
-    
-    // Setup event handlers
-    this.setupEventHandlers();
-    
-    this.logger.info('Leaflet map initialized', options);
-    return this.map;
+    this.#processInitialFeatures();
   }
-  
-  setupEventHandlers() {
+
+  /**
+   * Setup event handlers
+   * @private
+   */
+  #setupEventHandlers() {
     if (this.config.clickEnabled === false) {
       this.logger.info('Map click disabled');
       return;
     }
-    this.map.on('click', this.handleMapClick.bind(this));
-    this.map.on('sigpac:featureSelected', (e) => {
-      this.logger.info('Feature selected event', e.detail);
+    
+    // Use debounce to prevent rapid clicks
+    this.map.on('click', this.#debounce(
+      this.handleMapClick.bind(this), 
+      300
+    ));
+    
+    // Listen to internal events
+    this.eventBus.on('featureSelected', (data) => {
+      this.logger.info('Feature selected', data);
     });
   }
-  
-  _processInitialFeatures() {
+
+  /**
+   * Process initial features from config
+   * @private
+   */
+  #processInitialFeatures() {
     if (Array.isArray(this.config.initialFeatures)) {
-      this.logger.debug('Processing initial features', this.config.initialFeatures);
       this.config.initialFeatures.forEach(feature => {
         let layer;
         if (feature.type === 'marker' && feature.coordinates) {
@@ -96,11 +177,23 @@ export default class MapManager {
     }
   }
 
+  /**
+   * Handle map click events
+   */
   async handleMapClick(e) {
     this.logger.debug('Map click detected', e.latlng);
     
+    // Cancel previous request if it exists
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+    }
+    
+    // Create new controller for cancellation
+    const abortController = new AbortController();
+    this.currentAbortController = abortController;
+    
+    // Verify the zoom level
     if (this.map.getZoom() < this.config.minZoomFeature) {
-      this.logger.debug('Zoom level too low for features');
       this.popupManager.showErrorPopup(
         e.latlng, 
         `Zoom in to level ${this.config.minZoomFeature}+ to view SIGPAC parcels`
@@ -108,57 +201,69 @@ export default class MapManager {
       return;
     }
     
-    // If the final display is a popup, show a loading indicator.
-    // If it's a marker, we do nothing and wait silently, as requested.
+    // Add temporary marker immediately
+    const tempMarker = this.geometryManager.addMarker(e.latlng, {
+      title: 'Cargando datos SIGPAC...',
+      icon: this.config.markerLoadingIcon
+    });
+    
+    // For popup mode: show loading
     if (this.config.interactionMode === 'popup') {
-      this.logger.debug('Showing loading popup');
       this.popupManager.showLoadingPopup(e.latlng);
     }
     
     try {
-      this.logger.debug('Fetching SIGPAC data');
-      const parcelaData = await this.sigpacService.fetchParcelaByCoordinates(e.latlng);
+      // Get the SIGPAC data
+      const parcelaData = await this.sigpacService.fetchParcelaByCoordinates(
+        e.latlng,
+        { signal: abortController.signal }
+      );
       
-      // We have a response. First, close ANY popup that might be open (like the loading one).
-      // This is the most robust way to clean the slate.
-      this.map.closePopup();
-
-      // Use a minimal timeout to let the browser process the popup closure
-      // before we add a new element. This prevents UI race conditions.
-      setTimeout(() => {
-        if (parcelaData) {
-          this.logger.debug('SIGPAC data received', parcelaData);
-          this.logger.debug(`Interaction mode: ${this.config.interactionMode}`);
-          
-          // PopupManager will handle drawing markers or polygons based on mode
-          this.popupManager.showParcelaInfo(parcelaData, e.latlng);
-          this.eventManager.emitFeatureSelected(parcelaData, e.latlng);
-          this.eventManager.emitLivewireEvent(parcelaData, e.latlng);
-        } else {
-          this.logger.debug('No SIGPAC data found');
-          this.popupManager.showErrorPopup(
-            e.latlng, 
-            'No SIGPAC parcels found at this location'
-          );
-        }
-      }, 10); // A tiny delay is enough to yield to the event loop.
-
+      // Delete temporary marker (if the request was not canceled)
+      if (!abortController.signal.aborted) {
+        this.geometryManager.removeLayer(tempMarker);
+      }
+      
+      // Process the data
+      if (parcelaData) {
+        this.popupManager.showParcelaInfo(parcelaData, e.latlng);
+        this.eventManager.emitFeatureSelected(parcelaData, e.latlng);
+        this.eventManager.emitLivewireEvent(parcelaData, e.latlng);
+      } else {
+        this.popupManager.showErrorPopup(
+          e.latlng, 
+          'No SIGPAC parcels found at this location'
+        );
+      }
     } catch (error) {
-      // On error, also ensure all popups are closed before showing the error message.
-      this.map.closePopup();
+      // Do not handle errors if it was canceled
+      if (error.name === 'AbortError') {
+        this.logger.debug('Fetch aborted');
+        return;
+      }
+      
       this.logger.error('Error handling map click', error);
-      this.handleFetchError(error, e.latlng);
+      
+      // Update time stamp to error state
+      tempMarker.setIcon(this.config.markerErrorIcon);
+      tempMarker.bindPopup(`<div class="sigpac-error">${error.message || 'Error fetching data'}</div>`);
+      
+      // Show error popup (if we are in popup mode)
+      if (this.config.interactionMode === 'popup') {
+        this.popupManager.showErrorPopup(e.latlng, 'Error fetching parcel data');
+      }
     }
   }
-  
-  handleFetchError(error, latlng) {
-    let errorMessage = 'Error fetching parcel data';
-    
-    if (error.message.includes('404')) errorMessage = 'Parcel not found in SIGPAC';
-    else if (error.message.includes('400')) errorMessage = 'Invalid coordinates';
-    else if (error.message.includes('500')) errorMessage = 'SIGPAC server error';
-    
-    this.popupManager.showErrorPopup(latlng, errorMessage);
-    this.logger.error('Map click handling error', error);
+
+  /**
+   * Debounce function for events
+   * @private
+   */
+  #debounce(fn, delay) {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn.apply(this, args), delay);
+    };
   }
 }

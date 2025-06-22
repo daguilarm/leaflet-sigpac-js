@@ -23,6 +23,15 @@
         debug: true,
         interactionMode: 'popup', // Interaction on click is independent of initial features
         clickEnabled: false,
+
+        // Custom cache if you need other configuration
+        // cacheConfig: {
+        //   enabled: true,
+        //   ttl: 300000, // 5 minutos
+        //   maxSize: 50,
+        //   precision: 4
+        // },
+
         initialFeatures: [
           { 
             type: 'marker',
@@ -42,7 +51,14 @@
         }
       });
       
-      manager.init(document.getElementById('map'));
+      const map = manager.init(document.getElementById('map'));
+      
+      // Update cache status in UI -> Just for demo purposes
+      const cacheStatus = document.getElementById('cache-status');
+      if (!manager.config.cacheConfig.enabled) {
+        cacheStatus.textContent = 'DISABLED';
+        cacheStatus.className = 'cache-status cache-disabled';
+      }
     });
   </script>
 </body>

@@ -2,15 +2,18 @@
 <html>
 <head>
   <title>SIGPAC Map</title>
+  
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
   <!-- Rutas para probar en desarrollo, usando "npm run dev" -->
   <link rel="stylesheet" href="../dist/assets/css/leaflet-sigpac.min.css" />
   <script type="module" src="../dist/assets/js/leaflet-sigpac.es.min.js"></script>
 </head>
 <body>
+
   <div id="map" style="height: 500px;"></div>
   
   <script>
@@ -30,6 +33,14 @@
         //   { label: 'Parcela:', value: parcelaData.parcela },
         //   { label: 'Superficie:', value: parcelaData.superficie, suffix: 'ha' }
         // ],
+
+        // Custom cache if you need other configuration
+        // cacheConfig: {
+        //   enabled: true,
+        //   ttl: 300000, // 5 minutos
+        //   maxSize: 50,
+        //   precision: 4
+        // },
         
         defaultMapOptions: {
           center: [37.718387, -0.874100],
@@ -39,6 +50,7 @@
         }
       });
       
+      // Inicializar el mapa
       manager.init(document.getElementById('map'));
     });
   </script>

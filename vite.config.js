@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import fs from 'fs';
 
 export default defineConfig({

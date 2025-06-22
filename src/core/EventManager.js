@@ -1,16 +1,25 @@
 /**
- * Handles all event-related functionality
+ * Handles custom events and Livewire integration
  */
 export default class EventManager {
-  constructor(config, mapContainer) {
+
+  constructor(config, mapContainer, eventBus) {
     this.config = config;
     this.mapContainer = mapContainer;
+    this.eventBus = eventBus;
   }
-  
+
   /**
-   * Emits feature selected event
+   * Emit feature selected event
    */
   emitFeatureSelected(parcelaData, latlng) {
+    // Internal event bus
+    this.eventBus.emit('featureSelected', {
+      data: parcelaData,
+      coordinates: latlng
+    });
+    
+    // DOM event
     const event = new CustomEvent('sigpac:featureSelected', {
       detail: {
         data: parcelaData,
@@ -21,9 +30,9 @@ export default class EventManager {
     
     this.mapContainer.dispatchEvent(event);
   }
-  
+
   /**
-   * Emits Livewire event if enabled
+   * Emit Livewire event if enabled
    */
   emitLivewireEvent(parcelaData, latlng) {
     if (this.config.livewire && window.livewire) {

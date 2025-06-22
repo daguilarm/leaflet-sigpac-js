@@ -1,30 +1,26 @@
 /**
- * Handles layer management for the map
+ * Manages map layers and tile configurations
  */
 export default class LayerManager {
+
   constructor(config, map) {
     this.config = config;
     this.map = map;
-    this.baseLayer = null;
-    this.sigpacLayer = null;
-    this.setupAttribution(config.defaultMapOptions);
+    this.#setupAttribution();
   }
-  
+
   /**
-   * Initializes base layer
+   * Initialize base tile layer
    */
   initBaseLayer(options) {
     this.baseLayer = L.tileLayer(options.tileUrl, {
       maxZoom: options.maxZoom,
       minZoom: options.minZoom
     }).addTo(this.map);
-
-    // Configure attribution
-    this.setupAttribution(options);
   }
-  
+
   /**
-   * Initializes SIGPAC layer
+   * Initialize SIGPAC WMS layer
    */
   initSigpacLayer() {
     this.sigpacLayer = L.tileLayer.wms(this.config.sigpacWmsUrl, {
@@ -38,33 +34,36 @@ export default class LayerManager {
       opacity: 0.7
     });
   }
-  
+
   /**
-   * Configure layer control
+   * Setup layer control interface
    */
   setupLayerControl() {
     if (!this.baseLayer) return;
     
-    const baseLayers = { 'Base Layer': this.baseLayer };
-    const overlays = { 'SIGPAC': this.sigpacLayer };
-    
-    L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(this.map);
+    L.control.layers(
+      { 'Base Layer': this.baseLayer },
+      { 'SIGPAC': this.sigpacLayer },
+      { collapsed: false }
+    ).addTo(this.map);
   }
 
   /**
-   * Configure attribution
+   * Configure map attribution
+   * @private
    */
-  setupAttribution(options) {
+  #setupAttribution() {
     const attributionControl = this.map.attributionControl;
-    
     if (!attributionControl) return;
     
-    if (options.hideLeafletAttribution === true) {
+    if (this.config.hideLeafletAttribution) {
       attributionControl.setPrefix('');
     }
     
-    if (options.attribution) {
-      attributionControl.addAttribution(options.attribution);
+    if (this.config.defaultMapOptions.attribution) {
+      attributionControl.addAttribution(
+        this.config.defaultMapOptions.attribution
+      );
     }
   }
 }

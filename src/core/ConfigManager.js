@@ -1,15 +1,22 @@
 import { defaultConfig } from '../config.js';
 
+/**
+ * Centralizes configuration management with deep merging capabilities
+ */
 export default class ConfigManager {
+
   constructor(userConfig = {}) {
     this.userConfig = userConfig;
   }
 
+  /**
+   * Merges default configuration with user-provided options
+   */
   getConfig() {
-    // Fusionar primer nivel
+    // First-level merge
     const mergedConfig = { ...defaultConfig, ...this.userConfig };
     
-    // Preparar opciones de mapa de nivel superior
+    // Extract top-level map options
     const topLevelMapOptions = {};
     const mapOptionKeys = [
       'minZoom', 'maxZoom', 'center', 'zoom', 'tileUrl', 'attribution'
@@ -22,7 +29,7 @@ export default class ConfigManager {
       }
     });
     
-    // Fusionar defaultMapOptions con prioridad
+    // Deep merge defaultMapOptions
     mergedConfig.defaultMapOptions = {
       ...defaultConfig.defaultMapOptions,
       ...topLevelMapOptions,

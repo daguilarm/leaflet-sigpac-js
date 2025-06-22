@@ -1,12 +1,6 @@
-/**
- * Main entry point for Leaflet-SIGPAC library
- * 
- * Imports necessary CSS and exposes core functionality
- * Sets up automatic initialization for maps with data attributes
- */
-
 import './assets/css/sigpac.css';
 import MapManager from './core/MapManager.js';
+import CoordinateCache from './core/CacheManager.js'; // Importar la clase
 
 // Run only in browser environment
 if (typeof window !== 'undefined') {
@@ -16,10 +10,9 @@ if (typeof window !== 'undefined') {
    * Contains core components and initialization methods
    */
   const LeafletSigpac = {
-
-    //Main class for managing SIGPAC-enabled Leaflet maps
     MapManager,
-
+    CoordinateCache, // Exponer la clase
+    
     //Auto-initializes maps on elements with data-sigpac-map attribute
     autoInit: function() {
       document.querySelectorAll('[data-sigpac-map]').forEach(element => {
@@ -39,6 +32,15 @@ if (typeof window !== 'undefined') {
           );
         }
       });
+    },
+    
+    /**
+     * Get manager instance by element
+     * @param {HTMLElement} element - Map container
+     * @returns {MapManager} Manager instance
+     */
+    getManager: function(element) {
+      return element.leafletSigpac?.manager;
     }
   };
 

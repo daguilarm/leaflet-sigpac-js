@@ -1,64 +1,148 @@
+import ScriptLoader from '../utils/scriptLoader.js';
+
 /**
- * Handles creation and management of various geometries (markers, polygons, etc.)
+ * Manages geometric elements with memory optimization.
  */
 export default class GeometryManager {
+  
+  /**
+   * Initializes the GeometryManager with the map and configuration.
+   */
   constructor(map, config) {
     this.map = map;
     this.config = config;
-    this.layers = []; // To keep track of all added geometries
+    this.layerStore = new Map(); // Changed to Map instead of WeakMap
     this.defaultIcon = L.icon({ 
-      iconUrl: this.config.markerIconUrl, // Now configurable from config.js
+      iconUrl: this.config.markerIconUrl,
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [1, -34]
     });
+    // Reference for the WKT parser (will be loaded on demand)
+    this.wktParser = null;
   }
 
   /**
    * Adds a marker to the map.
-   * @param {L.LatLng | Array<number>} latlng - The coordinates for the marker.
-   * @param {object} options - Options for the marker (e.g., title).
-   * @returns {L.Marker} The created Leaflet marker.
    */
   addMarker(latlng, options = {}) {
-    const markerOptions = {
-      icon: this.defaultIcon,
+    const marker = L.marker(latlng, {
+      icon: options.icon || this.defaultIcon,
       ...options
-    };
-    const marker = L.marker(latlng, markerOptions).addTo(this.map);
-    this.layers.push(marker);
+    });
+    
+    this.#addToStore(marker, 'marker');
     return marker;
   }
 
   /**
-   * Adds a WKT (Well-Known Text) geometry to the map.
-   * @param {string} wktString - The WKT string.
-   * @returns {L.Layer|null} The created Leaflet layer or null on error.
-   */
-  addWkt(wktString) {
-    if (typeof Terraformer === 'undefined' || !Terraformer.WKT) {
-      console.error('Terraformer WKT parser not found. Please include the library in your HTML.');
+   * Parses and adds WKT geometry to the map.
+   */ 
+  async addWkt(wktString) {
+    try {
+      // Load Terraformer only if necessary
+      if (!this.wktParser) {
+        this.wktParser = await this.#loadWktParser();
+      }
+      
+      const geoJson = this.wktParser.parse(wktString);
+      const layer = L.geoJSON(geoJson);
+      this.#addToStore(layer, 'wkt');
+      return layer;
+    } catch (error) {
+      console.error('WKT parse error:', error);
       return null;
     }
-    const geoJson = Terraformer.WKT.parse(wktString);
-    const layer = L.geoJSON(geoJson).addTo(this.map);
-    this.layers.push(layer);
-    return layer;
   }
 
   /**
-   * Binds a popup to any layer.
-   * @param {L.Layer} layer - The layer to bind the popup to.
-   * @param {string|HTMLElement} content - The content of the popup.
-   */
+   * Binds a popup to a given layer.
+   */ 
   bindPopup(layer, content) {
     if (layer && content) {
       layer.bindPopup(content);
     }
   }
 
+  /**
+   * Removes a specific layer from the map and the store.
+   */ 
+  removeLayer(layer) {
+    if (layer && this.layerStore.has(layer)) {
+      this.map.removeLayer(layer);
+      this.layerStore.delete(layer);
+    }
+  }
+
+  /** 
+   * Clears all managed layers from the map and the store.
+   */
   clearLayers() {
-    this.layers.forEach(layer => this.map.removeLayer(layer));
-    this.layers = [];
+    this.layerStore.forEach((_, layer) => {
+      this.map.removeLayer(layer);
+    });
+    this.layerStore.clear();
+  }
+
+  /**
+   * Loads the WKT parser dynamically.
+   * @private
+   */
+  async #loadWktParser() {
+    try {
+      if (typeof window === 'undefined' || !window.Terraformer) {
+        await ScriptLoader.loadAll([
+          this.config.externalLibs.terraformer,
+          this.config.externalLibs.terraformerWkt
+        ]);
+      }
+
+      if (typeof window === 'undefined' || !window.Terraformer) {
+        throw new Error('Failed to load WKT parser after script loading');
+      }
+
+      this.wktParser = window.Terraformer.WKT;
+    } catch (error) {
+      console.error('Error loading WKT parser:', error);
+      throw error;
+    }
+  }
+
+  // async #loadWktParser() {
+  //   const terraformerConfig = {
+  //     url: this.config.externalLibs.terraformer.url,
+  //     integrity: this.config.externalLibs.terraformer.integrity,
+  //     checkLoaded: () => typeof window.Terraformer !== 'undefined'
+  //   };
+  //   const wktParserConfig = {
+  //     url: this.config.externalLibs.terraformerWkt.url,
+  //     integrity: this.config.externalLibs.terraformerWkt.integrity,
+  //     checkLoaded: () => typeof window.Terraformer?.WKT !== 'undefined'
+  //   };
+  //   const libsToLoad = [];
+    
+  //   if (!terraformerConfig.checkLoaded()) {
+  //     libsToLoad.push(terraformerConfig);
+  //   }
+    
+  //   if (!wktParserConfig.checkLoaded()) {
+  //     libsToLoad.push(wktParserConfig);
+  //   }
+  //   if (libsToLoad.length > 0) {
+  //     await ScriptLoader.loadAll(libsToLoad);
+  //   }
+  //   if (typeof window.Terraformer?.WKT === 'undefined') {
+  //     throw new Error('Failed to load WKT parser after script loading');
+  //   }
+  //   return window.Terraformer.WKT;
+  // }
+
+  /**
+   * Adds a layer to the store with metadata and to the map.
+   * @private
+   */ 
+  #addToStore(layer, type) {
+    this.layerStore.set(layer, { type, addedAt: Date.now() });
+    layer.addTo(this.map);
   }
 }
