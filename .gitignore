@@ -12,6 +12,7 @@ yarn-debug.log
 
 # Build artifacts
 /build
+/dist/examples
 
 # Vite
 .vite/
