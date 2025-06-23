@@ -25,7 +25,7 @@ export default defineConfig({
           if (assetInfo.name === 'style.css') {
             return 'assets/css/leaflet-sigpac.min.css';
           }
-          return 'assets/[name][extname]';
+          return 'assets/css/leaflet-sigpac.min.css';
         }
       },
       plugins: [terser()]

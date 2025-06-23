@@ -1,4 +1,4 @@
-import ScriptLoader from '../utils/scriptLoader.js';
+import ScriptLoader from './utils/lib-loader.js';
 
 /**
  * Manages geometric elements with memory optimization.
