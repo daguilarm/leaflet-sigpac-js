@@ -152,5 +152,36 @@ const manager = new window.LeafletSigpac.MapManager({
   }
 });
 ```
+
+## API Reference
+### MapManager 
+Core class for managing SIGPAC maps:
+
+|Method|Description|
+|---|---|
+|init(element, options)|Initialize map on specified element|
+|destroy()|Clean up resources and remove map|
+|handleMapClick(e)|Handle map click event(internal)|
+
+### CoordinateCache
+Coordinate-based caching system:
+
+|Method|Description|
+|---|---|
+|get(latlng)|Get cached value for coordinates|
+|set(latlng, data)|Set cache value for coordinates|
+|clear()|Clear entire cache|
+
+
+### GeometryManager
+Manages geometric elements on the map:
+
+|Method|Description|
+|---|---|
+|addMarker(latlng, options)|Add marker to map|
+|addWkt(wktString)|Parse and add WKT geometry|
+|bindPopup(layer, content)|Bind popup to layer|
+|clearLayers()|Remove all managed layers|
+
 # License
 MIT License
